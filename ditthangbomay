@@ -1,0 +1,100 @@
+-- StarterPlayer/StarterPlayerScripts/StandAutoSequence (LocalScript)
+-- Lua (Luau) version of the auto key-sequence macro, for YOUR game.
+-- Runs a customizable sequence of stand moves with per-step timing.
+-- The server still validates every move and enforces real cooldowns.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+
+local moveRemote = ReplicatedStorage:WaitForChild("StandRemotes"):WaitForChild("UseMove")
+
+-- ============================ CONFIG ============================
+local TOGGLE_KEY = Enum.KeyCode.G -- on/off key (there is also an on-screen button)
+local LOOP_COUNT = 0 -- 0 = repeat until turned off
+
+-- Which key triggers which stand move (matches StandService move names).
+-- Add Z, X, C, V here once you create moves for them.
+local KEY_TO_MOVE = {
+	E = "Punch",
+	R = "Barrage",
+	F = "Domain",
+}
+
+-- Each step: { key, secondsToWaitAfter }. Order matters; reorder or repeat freely.
+local SEQUENCE = {
+	{ "E", 0.5 },
+	{ "E", 0.5 },
+	{ "R", 1.0 },
+	{ "F", 2.0 },
+}
+-- ================================================================
+
+-- On-screen toggle button
+local gui = Instance.new("ScreenGui")
+gui.Name = "AutoSequenceMenu"
+gui.ResetOnSpawn = false
+gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.fromOffset(180, 40)
+button.Position = UDim2.new(0, 10, 0.5, 0)
+button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+button.TextColor3 = Color3.new(1, 1, 1)
+button.TextScaled = true
+button.Text = "Auto Sequence: OFF"
+button.Parent = gui
+
+local running = false
+local runId = 0
+
+local function updateUi()
+	button.Text = running and "Auto Sequence: ON" or "Auto Sequence: OFF"
+	button.BackgroundColor3 = running and Color3.fromRGB(30, 120, 60) or Color3.fromRGB(40, 40, 40)
+end
+
+local function runSequence()
+	runId += 1
+	local myId = runId
+	local loops = 0
+
+	while running and runId == myId do
+		for _, step in SEQUENCE do
+			if not running or runId ~= myId then
+				return
+			end
+			local move = KEY_TO_MOVE[step[1]]
+			if move then
+				moveRemote:FireServer(move)
+			else
+				warn("[AutoSequence] No move mapped for key " .. tostring(step[1]))
+			end
+			task.wait(math.max(step[2], 0.05))
+		end
+		loops += 1
+		if LOOP_COUNT > 0 and loops >= LOOP_COUNT then
+			break
+		end
+	end
+
+	if runId == myId then
+		running = false
+		updateUi()
+	end
+end
+
+local function toggle()
+	running = not running
+	updateUi()
+	if running then
+		task.spawn(runSequence)
+	end
+end
+
+button.Activated:Connect(toggle)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if not gameProcessed and input.KeyCode == TOGGLE_KEY then
+		toggle()
+	end
+end)
