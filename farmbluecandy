@@ -1,0 +1,281 @@
+-- ============================================================================
+-- World of Stands - English UI Script ("quyenhuang")
+-- Target List: Screaming Demon, Necromancer, The Killer
+-- Features: Red UI (English), 5-Stud Orbit, 0.3s M1 Clicks, Anti-AFK, Anti-Lag
+-- ============================================================================
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local Lighting = game:GetService("Lighting")
+local VirtualUser = game:GetService("VirtualUser")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+
+-- Configuration Settings
+local CONFIG = {
+    TargetNames = {"Screaming Demon", "Necromancer", "The Killer"},
+    OrbitRadius = 5,       -- Exact 5-stud orbital radius around target
+    OrbitHeight = 3,       -- Natural combat elevation
+    OrbitSpeed = 8,        -- Orbital rotation velocity
+    ClickInterval = 0.3,   -- M1 click cadence interval (0.3 seconds)
+    Enabled = false,
+    AntiLagEnabled = true
+}
+
+-- Anti-AFK Bypass Implementation
+LocalPlayer.Idled:Connect(function()
+    pcall(function()
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end)
+end)
+
+-- Anti-Lag Execution Routine
+local function applyAntiLag()
+    pcall(function()
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 9e9
+        
+        for _, v in ipairs(Lighting:GetChildren()) do
+            if v:IsA("PostEffect") or v:IsA("Atmosphere") or v:IsA("Sky") then
+                v.Enabled = false
+            end
+        end
+
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj:IsA("BasePart") then
+                obj.Material = Enum.Material.SmoothPlastic
+                obj.Reflectance = 0
+            elseif obj:IsA("Texture") or obj:IsA("Decal") then
+                obj.Transparency = 1
+            end
+        end
+
+        if setfpscap then
+            setfpscap(60)
+        end
+    end)
+end
+
+-- Create GUI Interface named "quyenhuang" with English UI labels
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "quyenhuang"
+ScreenGui.Parent = game:GetService("CoreGui")
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 260, 0, 190)
+MainFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(180, 40, 40) -- Red UI Theme
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 8)
+MainCorner.Parent = MainFrame
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, 0, 0, 45)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "WhipperX-y (English)\n(auto blue candy by quyenhuang)"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextSize = 12
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.Parent = MainFrame
+
+-- Status Box Container
+local StatusBox = Instance.new("Frame")
+StatusBox.Size = UDim2.new(0.9, 0, 0, 45)
+StatusBox.Position = UDim2.new(0.05, 0, 0.26, 0)
+StatusBox.BackgroundColor3 = Color3.fromRGB(130, 25, 25)
+StatusBox.BorderSizePixel = 0
+StatusBox.Parent = MainFrame
+
+local StatusCorner = Instance.new("UICorner")
+StatusCorner.CornerRadius = UDim.new(0, 6)
+StatusCorner.Parent = StatusBox
+
+local StatusText = Instance.new("TextLabel")
+StatusText.Size = UDim2.new(0.95, 0, 1, 0)
+StatusText.Position = UDim2.new(0.05, 0, 0, 0)
+StatusText.BackgroundTransparency = 1
+StatusText.Text = "Status: Searching target...\nAttack btn: found"
+StatusText.TextColor3 = Color3.fromRGB(255, 255, 255)
+StatusText.TextSize = 11
+StatusText.Font = Enum.Font.Code
+StatusText.TextXAlignment = Enum.TextXAlignment.Left
+StatusText.Parent = StatusBox
+
+-- Farm Toggle Button (Auto: ON/OFF)
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(0.42, 0, 0, 32)
+ToggleButton.Position = UDim2.new(0.05, 0, 0.55, 0)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(110, 20, 20)
+ToggleButton.Text = "Auto: OFF"
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.TextSize = 12
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.Parent = MainFrame
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0, 6)
+ToggleCorner.Parent = ToggleButton
+
+-- Anti-Lag Toggle Button (Anti-Lag: ON)
+local AntiLagButton = Instance.new("TextButton")
+AntiLagButton.Size = UDim2.new(0.42, 0, 0, 32)
+AntiLagButton.Position = UDim2.new(0.53, 0, 0.55, 0)
+AntiLagButton.BackgroundColor3 = Color3.fromRGB(50, 160, 90)
+AntiLagButton.Text = "Anti-Lag: ON"
+AntiLagButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+AntiLagButton.TextSize = 12
+AntiLagButton.Font = Enum.Font.GothamBold
+AntiLagButton.Parent = MainFrame
+
+local AntiLagCorner = Instance.new("UICorner")
+AntiLagCorner.CornerRadius = UDim.new(0, 6)
+AntiLagCorner.Parent = AntiLagButton
+
+-- Stop Script Button
+local StopButton = Instance.new("TextButton")
+StopButton.Size = UDim2.new(0.9, 0, 0, 30)
+StopButton.Position = UDim2.new(0.05, 0, 0.76, 0)
+StopButton.BackgroundColor3 = Color3.fromRGB(110, 20, 20)
+StopButton.Text = "Stop Script"
+StopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+StopButton.TextSize = 12
+StopButton.Font = Enum.Font.GothamBold
+StopButton.Parent = MainFrame
+
+local StopCorner = Instance.new("UICorner")
+StopCorner.CornerRadius = UDim.new(0, 6)
+StopCorner.Parent = StopButton
+
+-- Event Listeners
+ToggleButton.MouseButton1Click:Connect(function()
+    CONFIG.Enabled = not CONFIG.Enabled
+    if CONFIG.Enabled then
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 160, 90)
+        ToggleButton.Text = "Auto: ON"
+    else
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(110, 20, 20)
+        ToggleButton.Text = "Auto: OFF"
+    end
+end)
+
+AntiLagButton.MouseButton1Click:Connect(function()
+    CONFIG.AntiLagEnabled = not CONFIG.AntiLagEnabled
+    if CONFIG.AntiLagEnabled then
+        AntiLagButton.BackgroundColor3 = Color3.fromRGB(50, 160, 90)
+        AntiLagButton.Text = "Anti-Lag: ON"
+        applyAntiLag()
+    else
+        AntiLagButton.BackgroundColor3 = Color3.fromRGB(110, 20, 20)
+        AntiLagButton.Text = "Anti-Lag: OFF"
+    end
+end)
+
+StopButton.MouseButton1Click:Connect(function()
+    CONFIG.Enabled = false
+    ScreenGui:Destroy()
+end)
+
+if CONFIG.AntiLagEnabled then
+    applyAntiLag()
+end
+
+-- Single-Target Lock System
+local currentLockedTarget = nil
+
+local function findSingleTarget()
+    if currentLockedTarget and currentLockedTarget.Parent and currentLockedTarget:FindFirstChild("Humanoid") and currentLockedTarget.Humanoid.Health > 0 then
+        return currentLockedTarget
+    end
+
+    local nearest = nil
+    local shortestDistance = math.huge
+
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
+            local isTarget = false
+            for _, name in ipairs(CONFIG.TargetNames) do
+                if string.find(obj.Name, name) and obj.Humanoid.Health > 0 then
+                    isTarget = true
+                    break
+                end
+            end
+
+            if isTarget then
+                local dist = (HumanoidRootPart.Position - obj.HumanoidRootPart.Position).Magnitude
+                if dist < shortestDistance then
+                    shortestDistance = dist
+                    nearest = obj
+                end
+            end
+        end
+    end
+
+    currentLockedTarget = nearest
+    return nearest
+end
+
+-- Virtual Mouse Tap with 0.3s Cadence
+local function simulateClick()
+    local camera = Workspace.CurrentCamera
+    if not camera then return end
+    local viewportSize = camera.ViewportSize
+    local targetX = viewportSize.X * 0.85
+    local targetY = viewportSize.Y * 0.65
+
+    pcall(function()
+        VirtualInputManager:SendMouseButtonEvent(targetX, targetY, 0, true, game, 1)
+        task.wait(0.05)
+        VirtualInputManager:SendMouseButtonEvent(targetX, targetY, 0, false, game, 1)
+    end)
+end
+
+-- Main Execution Loop: 5-Stud Orbital Rotation + 0.3s M1 Clicks + Anti-AFK
+local angle = 0
+task.spawn(function()
+    while true do
+        RunService.RenderStepped:Wait()
+        if CONFIG.Enabled then
+            pcall(function()
+                if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    LocalPlayer.CharacterAdded:Wait()
+                    Character = LocalPlayer.Character
+                    HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+                    return
+                end
+
+                HumanoidRootPart = LocalPlayer.Character.HumanoidRootPart
+                local target = findSingleTarget()
+
+                if target and target:FindFirstChild("HumanoidRootPart") then
+                    local enemyRoot = target.HumanoidRootPart
+                    StatusText.Text = "Status: Target: " .. target.Name .. "\nAttack btn: found"
+                    
+                    -- Calculate 5-stud orbital circle around target
+                    angle = angle + (CONFIG.OrbitSpeed * RunService.RenderStepped:Wait())
+                    local offsetX = math.cos(angle) * CONFIG.OrbitRadius
+                    local offsetZ = math.sin(angle) * CONFIG.OrbitRadius
+                    
+                    local orbitalPosition = enemyRoot.Position + Vector3.new(offsetX, CONFIG.OrbitHeight, offsetZ)
+                    HumanoidRootPart.CFrame = CFrame.new(orbitalPosition, enemyRoot.Position)
+
+                    -- Execute M1 click with 0.3s interval cadence
+                    simulateClick()
+                    task.wait(CONFIG.ClickInterval)
+                else
+                    currentLockedTarget = nil
+                    StatusText.Text = "Status: Searching target...\nAttack btn: found"
+                end
+            end)
+        end
+    end
+end)
